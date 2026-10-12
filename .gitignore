@@ -5,3 +5,7 @@ gitignored/
 install/
 test_results/
 treetools/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/

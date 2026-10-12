@@ -1,9 +1,0 @@
-README.md
-pyproject.toml
-python/raycloud_tools/__init__.py
-python/raycloud_tools/trees.py
-python/raycloud_tools.egg-info/PKG-INFO
-python/raycloud_tools.egg-info/SOURCES.txt
-python/raycloud_tools.egg-info/dependency_links.txt
-python/raycloud_tools.egg-info/top_level.txt
-python/tests/test_trees.py
