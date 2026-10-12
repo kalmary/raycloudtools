@@ -36,7 +36,7 @@ The Python package is intentionally limited to the tree-extraction command.
 Install it from this checkout:
 
 ```bash
-python -m pip install .
+uv sync
 ```
 
 Then call the installed `rayextract` executable through Python:
