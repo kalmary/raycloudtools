@@ -8,6 +8,16 @@ version = "0.1.0"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 
+[dependency-groups]
+basic = []
+test = [
+    { include-group = "basic" },
+    "pytest>=9,<10",
+]
+
+[tool.uv]
+default-groups = ["basic"]
+
 [tool.setuptools.packages.find]
 where = ["python"]
 

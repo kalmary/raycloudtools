@@ -15,20 +15,36 @@ Clone it with its pinned build dependency:
 git clone --recurse-submodules git@github.com:kalmary/raycloudtools.git
 ```
 
-## Command-line use
+## Native build
 
-Build the C++ project with CMake and install it so `rayextract` is on `PATH`.
-BRIK uses only the `rayextract trees` workflow:
+Initialize the pinned build dependency first:
+
+```bash
+git submodule update --init --recursive
+```
+
+On Ubuntu, install `build-essential`, `cmake`, and `libeigen3-dev`, then follow
+the source-build stages in `docker/Dockerfile` or the BRIK composition
+Dockerfile.
+
+On Apple Silicon or Intel macOS, install the compatible dependencies and run
+the verified build helper:
+
+```bash
+brew install cmake eigen@3 libomp
+./scripts/build_macos.sh
+```
+
+Add the reported executable directory to `PATH` and the reported library
+directory to `DYLD_LIBRARY_PATH`. BRIK uses only the following workflow:
 
 ```bash
 rayextract trees cloud.ply ground.ply
 ```
 
-The BRIK Dockerfile performs this build directly from the checked-out fork. It
-uses a multi-architecture Linux base, so the image builds natively on Linux and
-with Docker Desktop on Intel or Apple Silicon macOS. Native macOS compilation
-uses the same CMake project and requires its C++ dependencies, including Eigen,
-OpenMP, and the included `libnabo` submodule.
+The BRIK Dockerfile performs the Linux build directly from the checked-out
+fork. Its multi-architecture base builds natively on Linux and with Docker
+Desktop on Intel or Apple Silicon macOS.
 
 ## Python wrapper
 
@@ -36,7 +52,7 @@ The Python package is intentionally limited to the tree-extraction command.
 Install it from this checkout:
 
 ```bash
-uv sync
+uv sync --group basic
 ```
 
 Then call the installed `rayextract` executable through Python:
@@ -65,7 +81,8 @@ working directory, raises `RuntimeError` when it fails, and returns the expected
 Run the focused wrapper tests with:
 
 ```bash
-pytest python/tests
+uv sync --group test
+uv run --group test pytest python/tests
 ```
 
 Upstream license and attribution files remain unchanged.

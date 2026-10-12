@@ -111,7 +111,6 @@ add_library(raylib SHARED ${SOURCES})
 include(GenerateExportHeader)
 generate_export_header(raylib)
 
-target_compile_options(raylib PUBLIC ${OpenMP_CXX_FLAGS})
 target_include_directories(raylib PUBLIC
   ${RAYTOOLS_INCLUDE}
   ${SIMPLE_FFT_INCLUDE_DIRS}
