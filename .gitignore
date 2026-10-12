@@ -1,4 +1,15 @@
 .idea/
+.vscode/
+.zed/
+.DS_Store
+.env
+.env.*
+!.env.example
+.venv/
+.uv-cache/
+.ruff_cache/
+.mypy_cache/
+.pyright/
 build*/
 cmake-build*/
 gitignored/
