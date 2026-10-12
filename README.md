@@ -1,351 +1,71 @@
-# Raycloudtools
+# Raycloudtools fork for BRIK
 
-This fork keeps the original CSIRO C++ tools and adds a small Python adapter
-used by BRIK Data Processing. The adapter exposes only the integration required
-by tree clustering: `rayextract trees`.
+This is the BRIK fork of
+[CSIRO Raycloudtools](https://github.com/csiro-robotics/raycloudtools), kept in
+sync with the upstream C++ project and extended with a small Python wrapper.
+The repository is used as a nested submodule of Tree-Clustering:
 
-## Python adapter
+```text
+git@github.com:kalmary/raycloudtools.git
+```
 
-The `raycloud_tools.run_trees()` function builds and executes the supported
-`rayextract trees` command. It does not start Docker, manage containers, create
-temporary directories, or change RayExtract output. The caller owns the PLY
-input files and their cleanup.
+Clone it with its pinned build dependency:
+
+```bash
+git clone --recurse-submodules git@github.com:kalmary/raycloudtools.git
+```
+
+## Command-line use
+
+Build the C++ project with CMake and install it so `rayextract` is on `PATH`.
+BRIK uses only the `rayextract trees` workflow:
+
+```bash
+rayextract trees cloud.ply ground.ply
+```
+
+The BRIK Dockerfile performs this build directly from the checked-out fork. It
+uses a multi-architecture Linux base, so the image builds natively on Linux and
+with Docker Desktop on Intel or Apple Silicon macOS. Native macOS compilation
+uses the same CMake project and requires its C++ dependencies, including Eigen,
+OpenMP, and the included `libnabo` submodule.
+
+## Python wrapper
+
+The Python package is intentionally limited to the tree-extraction command.
+Install it from this checkout:
+
+```bash
+python -m pip install .
+```
+
+Then call the installed `rayextract` executable through Python:
 
 ```python
+from pathlib import Path
+
 from raycloud_tools import run_trees
 
-segmented_path = run_trees(
-    "cloud.ply",
-    "ground.ply",
-    height_min=2.0,
+output_path = run_trees(
+    Path("cloud.ply"),
+    Path("ground.ply"),
+    height_min=1.0,
     max_diameter=0.9,
-    crop_length=1.0,
-    distance_limit=0.3,
-    girth_height_ratio=0.12,
-    gravity_factor=0.75,
+    crop_length=0.1,
+    distance_limit=0.2,
+    girth_height_ratio=0.4,
+    gravity_factor=0.3,
 )
 ```
 
-Install the adapter from this checkout:
+`run_trees()` forwards the supported options, runs the command in the supplied
+working directory, raises `RuntimeError` when it fails, and returns the expected
+`*_segmented.ply` path. It does not start containers or manage temporary files.
 
-```bash
-uv pip install -e .
-```
-
-`rayextract` must be compiled and available on `PATH`. BRIK compiles it into
-the application image and installs this Python package from the nested
-submodule checkout.
-
-Run the adapter tests with an environment that provides pytest:
+Run the focused wrapper tests with:
 
 ```bash
 pytest python/tests
 ```
 
-## Upstream project
-
-A set of command line tools for processing ray clouds, together with an
-associated C++ library.
-A set of command line tools for processing ray clouds, together with an associated C++ library.
-
-
-Ray clouds are point clouds with the sensor origin stored per point (currently encoded in the 'normal' field of .ply files).
-Ray clouds represent free space as well as surfaces. This allows processing that cannot be done on point cloud data alone.
-
-This is an open-source research library, a place to release new techniques in ray cloud analysis and manipulation. So if you would like to contribute with a new or improved method, do suggest it in our discussions page: https://github.com/csiro-robotics/raycloudtools/discussions.
-
-## Citation
-
-If you use the RayCloudTools library in your research, please cite:
-
-> Lowe, Thomas, and Kazys Stepanas. "RayCloudTools: A Concise Interface for Analysis and Manipulation of Ray Clouds." IEEE Access (2021).
-
-> Lowe, T, Moghadam, P, Edwards, E, Williams, J. Canopy density estimation in perennial horticulture crops using 3D spinning lidar SLAM. J Field Robotics. 2021; 1– 21. https://doi.org/10.1002/rob.22006
-
-If you use RayExtract (`rayextract trees` or `rayextract terrain`) for tree or forest reconstruction, please cite:
-
-> Devereux, T., Lowe, T., Rivory, J., Reckziegel, R. B., Calders, K., Aryal, R. R., Eaton, G., Cooper, Z., Levick, S., Phinn, S., & Woodgate, W. (2026). RayExtract: A fast, scalable method for tree volume reconstruction from terrestrial laser scanning. Remote Sensing of Environment, 334, 115162. https://doi.org/10.1016/j.rse.2025.115162
-
-## Install using a Pre-built Container
-
-### Docker (Linux, MacOS, Windows)
-#### Pull the Latest Image
-To download the latest image from GitHub Packages, use the following command:
-```bash
-docker pull ghcr.io/csiro-robotics/raycloudtools:latest
-```
-
-#### Run an Interactive Container
-To run the container interactively and bind your home directory to a directory inside the container for accessing host files:
-
-#### On Linux/MacOS
-```bash
-docker run -it --name raycloudtools -v /home/yourusername:/workspace ghcr.io/csiro-robotics/raycloudtools:latest /bin/bash
-```
-
-#### On Windows
-```bash
-docker run -it --name raycloudtools -v C:/Users/YourUsername:/workspace ghcr.io/csiro-robotics/raycloudtools:latest /bin/bash
-```
-Replace `/home/yourusername` or `C:/Users/YourUsername` with the path to your home directory.
-
-#### Reusing Container
-To restart and attach to the container in the future:
-```bash
-docker start -ai raycloudtools
-```
-
-### Apptainer (Linux/HPC)
-```console
-# Login to GitHub Container Registry (required once)
-export CR_PAT=YOUR_GITHUB_TOKEN
-apptainer registry login -u YOUR_GITHUB_USERNAME -p $CR_PAT oras://ghcr.io
-
-# Pull and convert the container
-apptainer pull docker://ghcr.io/csiro-robotics/raycloudtools:latest
-
-# Run an interactive container (binds host home directory by default)
-apptainer shell raycloudtools_latest.sif
-```
-
-To create a GitHub token:
-1. Go to GitHub Settings → Developer Settings → Personal Access Tokens → Tokens (classic)
-2. Generate new token with `read:packages` scope
-3. Copy the token and use it in the login command above
-
-## Build from Source with Docker
-```console
-# Clone the repository
-git clone https://github.com/csiro-robotics/raycloudtools.git
-cd raycloudtools
-
-# Build the image
-docker build -f docker/Dockerfile -t raycloudtools:local .
-```
-
-## Build from Source (tested on Linux-based systems):
-```console
-sudo apt-get install libeigen3-dev
-git clone https://github.com/ethz-asl/libnabo.git
-cd libnabo
-git checkout tags/1.0.7
-mkdir build
-cd build
-cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo
-make
-sudo make install
-cd ../..
-git clone https://github.com/csiro-robotics/raycloudtools.git
-cd raycloudtools
-mkdir build
-cd build
-cmake ..
-make
-```
-
-To run the rayXXXX tools from anywhere either sudo make install, or place in your ~/.bashrc:
-```console
-  export PATH=$PATH:'source code path'/raycloudtools/build/bin
-```
-
-If not there already, add to your ~/.bashrc:
-```console
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
-```
-
-## Visualising Ray Clouds:
-free software such as Meshlab and CloudCompare can view ray clouds.
-
-The build variables RAYLIB_VISTOOL and RAYLIB_IMAGETOOL allow the --view (-v) flag to view command-line results immediately.
-They default to meshlab and kolourpaint respectively but can be changed with ccmake or with the -D cmake argument.
-You will need to install these programs if you want the --view flag to work.
-
-## File format:
-Raycloud files are loaded and saved in binary .ply format, the header section is text and follows this format:
-```console
-ply
-format binary_little_endian 1.0
-comment generated by raycloudtools library
-element vertex 0000000000<number of points>
-property <float/double> x
-property <float/double> y
-property <float/double> z
-property <float/double> time
-property <float/double> nx
-property <float/double> ny
-property <float/double> nz
-property uchar red
-property uchar green
-property uchar blue
-property uchar alpha
-end_header
-```
-followed by the binary data. By default it uses floats for x,y,z,nx,ny,nz and doubles for time. nx,ny,nz is the vector from the end point x,y,z to the sensor's location at the time that the point was observed. It is not a surface normal, but the ray representing free space from point to source.
-
-Imported .ply point cloud files have a similar format, but without the nx,ny,nz fields, and optionally an intensity field instead of the red,green,blue,alpha:
-```console
-ply
-format binary_little_endian 1.0
-comment Any comment here
-element vertex 0000000000<number of points>
-property <float/double> x
-property <float/double> y
-property <float/double> z
-property <float/double> time
-property <float/double> intensity
-end_header
-```
-The range of this intensity mapped onto the raycloud's 0-255 alpha value using rayimport's max_intensity optional parameter.
-
-The imported .laz point cloud format is the 3D point, time and intensity fields. Plus the optional colour field.
-
-## Visual Guide:
-
-This gives an example of how the command line tools could be sequenced to analyse (top down) and generate (bottom up) ray clouds.
-
-<p align="center"><img img width="480" src="https://raw.githubusercontent.com/csiro-robotics/raycloudtools/main/pics/raycloudtools_cheatsheet.png?at=refs%2Fheads%2Fmaster"/></p>
-
-## Individual Examples:
-
-**rayimport forest.laz forest_traj.txt** &nbsp;&nbsp;&nbsp; Import point cloud and trajectory to a single raycloud file forest.ply. forest_traj.txt is space separated 'time x y z' per line.
-
-**raycreate room 1** &nbsp;&nbsp;&nbsp; Generate a single room with a window and door, using random seed 1.
-<p align="center">
-<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/raycloudtools/main/pics/room1.png?at=refs%2Fheads%2Fmaster"/>
-  <img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/raycloudtools/main/pics/room3.png?at=refs%2Fheads%2Fmaster"/>
-  <img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/raycloudtools/main/pics/room2.png?at=refs%2Fheads%2Fmaster"/>
-</p>
-&nbsp;&nbsp;&nbsp; You can visualise the rays in meshlab with Render | Show Vertex Normals. The ray lengths need to be scaled: Tools | Options | NormalLength roughly 0.025 (smaller for larger clouds)
-
-**raydecimate room.ply 10 cm** &nbsp;&nbsp;&nbsp; Spatially decimate cloud to one point every cubic 10 cm.
-
-<p align="center"><img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/raycloudtools/main/pics/room_decimated.png?at=refs%2Fheads%2Fmaster"/></p>
-
-**raytranslate room.ply 3 0 0** &nbsp;&nbsp;&nbsp; Translate the ray cloud 3 metres along the x axis.
-
-<p align="center"><img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/raycloudtools/main/pics/room_translate.png?at=refs%2Fheads%2Fmaster"/></p>
-
-**rayrotate room.ply 0 0 30** &nbsp;&nbsp;&nbsp; Rotate the ray cloud 30 degrees around the z axis.
-
-<p align="center"><img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/raycloudtools/main/pics/room_rotate.png?at=refs%2Fheads%2Fmaster"/></p>
-
-**raydenoise room.ply 10 cm** &nbsp;&nbsp;&nbsp; Remove rays with isolated end points more than 10 cm from any other, not including unbounded rays.
-
-<p align="center">
-<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/raycloudtools/main/pics/room_denoise1.png?at=refs%2Fheads%2Fmaster"/>
-<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/raycloudtools/main/pics/room_denoise2.png?at=refs%2Fheads%2Fmaster"/>
-
-**raysmooth room.ply** &nbsp;&nbsp;&nbsp; Move ray end points onto the nearest surface, to smooth the resulting cloud.
-
-<p align="center">
-<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/raycloudtools/main/pics/room_smooth1.png?at=refs%2Fheads%2Fmaster"/>
-<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/raycloudtools/main/pics/room_smooth2.png?at=refs%2Fheads%2Fmaster"/>
-</p>
-
-**rayrender room.ply top density_rgb** &nbsp;&nbsp;&nbsp; Render the cloud from the top, as a surface area density.
-
-<p align="center">
-<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/raycloudtools/main/pics/rayrender_room_top_density_rgb.png?at=refs%2Fheads%2Fmaster"/>
-</p>
-
-**raytransients min room.ply 2 rays** &nbsp;&nbsp;&nbsp; Segment out moving or moved objects during the scan, when matter has been re-observed as missing by 2 or more rays.
-
-&nbsp;&nbsp;&nbsp; Leaving the ***minimum*** of geometry when transient.
-
-&nbsp;&nbsp;&nbsp; In this raycloud the table and cupboard appear only after the empty room has been scanned for several seconds, so we can isolate these transient objects.
-
-<p align="center">
-<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/raycloudtools/main/pics/room_transients1.png?at=refs%2Fheads%2Fmaster"/>
-<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/raycloudtools/main/pics/room_transients2.png?at=refs%2Fheads%2Fmaster"/>
-<img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/raycloudtools/main/pics/room_transients3.png?at=refs%2Fheads%2Fmaster"/>
-</p>
-
-&nbsp;&nbsp;&nbsp; Left: original cloud. Middle: the fixed (untransient) raycloud. Right: the remaining transient rays are also saved.
-
-**raycombine room.ply room2.ply** &nbsp;&nbsp;&nbsp; Combine room and its transformed version together, keeping ***all*** rays.
-
-<p align="center"><img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/raycloudtools/main/pics/room_combined_all.png?at=refs%2Fheads%2Fmaster"/></p>
-
-**raycombine min room.ply room2.ply 1 rays** &nbsp;&nbsp;&nbsp; Combine the two ray clouds keeping only the ***minimum*** of geometry where there is a difference.
-
-&nbsp;&nbsp;&nbsp; This is a form of union of the two volumes.
-
-<p align="center"><img img width="320" src="https://raw.githubusercontent.com/csiro-robotics/raycloudtools/main/pics/room_combined_min.png?at=refs%2Fheads%2Fmaster"/></p>
-
-**rayalign room.ply room2.ply** &nbsp;&nbsp;&nbsp; Aligns room onto room2, allowing for a small about of non-rigidity
-
-**rayextract terrain cloud.ply** &nbsp;&nbsp;&nbsp; extracts a ground mesh based on a conical height condition.
-
-<p align="center"><img img width="640" src="https://raw.githubusercontent.com/csiro-robotics/raycloudtools/main/pics/rayextract_terrain.png?at=refs%2Fheads%2Fmaster"/></p>
-
-**rayextract trees forest.ply forest_mesh.ply** &nbsp;&nbsp;&nbsp; extracts tree structures to text file, and segments forest.
-
-<p align="center"><img img width="640" src="https://raw.githubusercontent.com/csiro-robotics/raycloudtools/main/pics/rayextract_trees.png?at=refs%2Fheads%2Fmaster"/></p>
-
-*Optional build dependencies:*
-
-For rayimport/rayexport to work with .las and .laz files (LAS 1.0 through 1.4, including COPC):
-* Do one of:
-    * sudo apt update, sudo apt install liblaszip-dev
-    * git clone https://github.com/LASzip/LASzip.git, git checkout tags/3.4.4, then mkdir build, cd build, cmake .. -DCMAKE_BUILD_TYPE=Release, make, sudo make install.
-* in raycloudtools/build: cmake .. -DRAYLIB_WITH_LAS=ON  (or ccmake .. to turn on/off RAYLIB_WITH_LAS)
-* note that you may need to add the LASzip install path into LD_LIBRARY_PATH, normally this can be done with the following line in your ~/.bashrc: export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
-
-For raywrap:
-
-* Do one of:
-    * sudo apt update, sudo apt install libqhull-dev
-    * git clone http://github.com/qhull/qhull.git, git checkout tags/v7.3.2
-        * In qhull: mkdir build, cd build, cmake .. -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true, make, sudo make install.
-* in raycloudtools/build: cmake .. -DRAYLIB_WITH_QHULL=ON (or ccmake .. to turn on/off RAYLIB_WITH_QHULL)
-
-To render clouds to geotiff (.tif) images:
-
-* Do one of:
-    * sudo apt update, sudo apt install libgeotiff-dev
-    * git clone https://github.com/OSGeo/libgeotiff.git
-        * follow the build instructions in its README.md, note that the "DCMAKE_C_FLAGS" parameter needs a preceding "-"
-        * copy a FindGeoTIFF.cmake file to your cmake folder, such as from here: https://github.com/ufz/geotiff
-* in raycloudtools/build: cmake .. -DRAYLIB_WITH_TIFF=ON (or ccmake .. to turn on/off RAYLIB_WITH_TIFF)
-
-## Unit Tests
-
-Unit tests must be enabled at build time before running. To build with unit tests, the CMake variable `RAYCLOUD_BUILD_TESTS` must be `ON`. This can be done in the initial project configuration by running the following command from the `build` directory: `cmake -DRAYCLOUD_BUILD_TESTS=ON ..`
-
-Unit tests may then be run directly or using `CTest`.
-
-### Running using CTest
-
-To run using CTest:
-
-* Change into the `build` directory
-* Run `ctest .`
-
-On some platforms it may be necessary to specify the build configuration to test. For example, the `Release` build may be tested using the modified command `ctest . -C Release`.
-
-### Directly invoking the tests
-
-When directly invoking the unit tests, is important that the tests are run from the directory to which the raycloud tools executables are built. To invoke the tests directly:
-
-* Change into the `build` directory
-* Change into the `bin/` directory
-* Run `./raytest`
-
-## Development Container Setup (.devcontainer)
-
-This project provides a `.devcontainer` directory for consistent development environments. Using the devcontainer is optional, but recommended for a streamlined setup. Here's how to get started:
-
-1. **Install Docker:** You'll need Docker Desktop (or a similar Docker engine) installed on your machine.
-
-2. **Open in VS Code:**
-    * Open the project in VS Code.
-    * VS Code should automatically detect the `.devcontainer` folder and prompt you to "Reopen in Container". Click it.
-    * If you're not prompted, open the command palette (Ctrl+Shift+P or Cmd+Shift+P) and type "Remote-Containers: Reopen in Container".
-
-That's it! VS Code will handle building and running the development container for you. If you choose not to use the devcontainer, you will need to ensure your local environment matches the project's dependencies and requirements.
-
-The scripts in [`.devcontainer/commands`](.devcontainer/commands) are available on PATH in the devcontainer and can be used to build, test and run raycloudtools and treetools. See [`.devcontainer/commands/setup.bash`](.devcontainer/commands/setup.bash) to configure CMake options and such.
-
-## Acknowledgements
-
-This research was supported by funding from CSIRO's Data61, Land and Water, Wine Australia, and the Department of Agriculture's Rural R&D for Profit program. The authors gratefully acknowledge the support of these groups, which has helped in making this library possible.
+Upstream license and attribution files remain unchanged.
