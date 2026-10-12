@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:26.04
 
 # Avoid prompts from apt
 ENV DEBIAN_FRONTEND=noninteractive
@@ -8,80 +8,60 @@ ENV LC_ALL=C
 ENV LANGUAGE=
 
 # Update, install dependencies and cleanup
-RUN apt-get update && apt-get upgrade -y && \
+RUN apt-get update && \
+    apt-get upgrade -y && \
     apt-get install -y \
-    git \
-    build-essential \
-    cmake \
-    clang-tidy \
-    libeigen3-dev \
-    libproj-dev \
-    libgeotiff-dev \
-    libgtest-dev \
-    libboost-all-dev && \
+        build-essential \
+        clang-tidy \
+        cmake \
+        git \
+        kolourpaint \
+        libboost-all-dev \
+        libeigen3-dev \
+        libgeotiff-dev \
+        libgtest-dev \
+        liblaszip-dev \
+        libnetcdf-c++4-dev \
+        libnetcdf-dev \
+        libproj-dev \
+        libqhull-dev \
+        libtbb-dev \
+        libtiff-dev \
+        meshlab && \
     rm -rf /var/lib/apt/lists/*
-    
+
+WORKDIR /deps
+
 # Create a directory for building packages
-RUN mkdir -p /build && \
-    cd /build
-
-# Clone, build and clean up LASzip
-RUN git clone https://github.com/LASzip/LASzip.git && \
-    cd LASzip && \
-    git checkout tags/2.0.1 && \
-    mkdir build && cd build && \
-    cmake .. && \
-    make -j$(nproc) && \
-    make install && \
-    cp bin/Release/liblas* /usr/lib/ && \
-    cd ../.. && rm -rf LASzip
-
-# Clone, build and clean up libLAS
-RUN git clone https://github.com/libLAS/libLAS.git && \
-    cd libLAS && \
-    mkdir build && cd build && \
-    cmake .. -DWITH_LASZIP=ON -DWITH_GEOTIFF=OFF -DCMAKE_CXX_STANDARD=14 && \
-    make -j$(nproc) && \
-    make install && \
-    cd ../.. && rm -rf libLAS
-
-# Clone, build and clean up Qhull
-RUN git clone https://github.com/qhull/qhull.git && \
-    cd qhull && \
-    git checkout tags/v7.3.2 && \
-    cd build && \
-    cmake .. -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true && \
-    make -j$(nproc) && \
-    make install && \
-    cd ../.. && rm -rf qhull
+RUN mkdir -p /deps && \
+    cd /deps
 
 # Clone, build and clean up libnabo
 RUN git clone https://github.com/ethz-asl/libnabo.git && \
     cd libnabo && \
-    git checkout tags/1.0.7 && \
-    mkdir build && cd build && \
-    cmake .. -DCMAKE_BUILD_TYPE=Release && \
-    make -j$(nproc) && \
-    make install && \
-    cd ../.. && rm -rf libnabo
-
-# Clone, build and install raycloudtools
-RUN git clone https://github.com/csiro-robotics/raycloudtools.git && \
-    cd raycloudtools && \
     mkdir build && \
     cd build && \
-    cmake .. \
-        -DGeoTIFF_INCLUDE_DIR=/usr/include/geotiff \
-        -DGeoTIFF_LIBRARY=/usr/lib/x86_64-linux-gnu/libgeotiff.so \
-        -DPROJ_INCLUDE_DIR=/usr/include/proj \
-        -DPROJ_LIBRARY=/usr/lib/x86_64-linux-gnu/libproj.so \
-        -DWITH_QHULL=ON \
-        -DWITH_LAS=ON \
-        -DDOUBLE_RAYS=ON \
-        -DWITH_TIFF=ON \
+    cmake .. -DCMAKE_BUILD_TYPE=Release && \
+    make -j "$(nproc)" && \
+    make install && \
+    cd ../.. && \
+    rm -rf libnabo
+
+WORKDIR /src
+
+COPY . .
+
+# Build and install raycloudtools
+RUN mkdir /build && \
+    cd /build && \
+    cmake /src \
+        -DCMAKE_BUILD_TYPE=Release \
         -DRAYCLOUD_BUILD_TESTS=ON \
-        -DCMAKE_BUILD_TYPE=Release && \
-    make -j$(nproc) && \
+        -DRAYLIB_DOUBLE_RAYS=ON \
+        -DRAYLIB_WITH_LAS=ON \
+        -DRAYLIB_WITH_QHULL=ON \
+        -DRAYLIB_WITH_TIFF=ON && \
+    make -j "$(nproc)" && \
     make install && \
     cd ../.. && \
     rm -rf raycloudtools
@@ -89,19 +69,18 @@ RUN git clone https://github.com/csiro-robotics/raycloudtools.git && \
 # Clone and build TreeTools
 RUN git clone https://github.com/csiro-robotics/treetools.git && \
     cd treetools && \
+    rm --force cmake/FindQhull.cmake cmake/FindTBB.cmake && \
     mkdir -p build && \
     cd build && \
     cmake .. \
-        -DPROJ_INCLUDE_DIR=/usr/include/proj \
-        -DPROJ_LIBRARY=/usr/lib/x86_64-linux-gnu/libproj.so \
-        -DWITH_TIFF=ON \
+        -DCMAKE_BUILD_TYPE=Release \
         -DTREE_BUILD_TESTS=ON \
-        -DCMAKE_BUILD_TYPE=Release && \
-    make -j$(nproc) && \
+        -DWITH_TIFF=ON && \
+    make -j "$(nproc)" && \
     make install && \
     cd ../.. && \
     rm -rf treetools
-    
+
 # Update ldconfig
 RUN ldconfig /usr/local/lib
 
