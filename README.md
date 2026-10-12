@@ -1,4 +1,51 @@
-## Ray Cloud Tools
+# Raycloudtools
+
+This fork keeps the original CSIRO C++ tools and adds a small Python adapter
+used by BRIK Data Processing. The adapter exposes only the integration required
+by tree clustering: `rayextract trees`.
+
+## Python adapter
+
+The `raycloud_tools.run_trees()` function builds and executes the supported
+`rayextract trees` command. It does not start Docker, manage containers, create
+temporary directories, or change RayExtract output. The caller owns the PLY
+input files and their cleanup.
+
+```python
+from raycloud_tools import run_trees
+
+segmented_path = run_trees(
+    "cloud.ply",
+    "ground.ply",
+    height_min=2.0,
+    max_diameter=0.9,
+    crop_length=1.0,
+    distance_limit=0.3,
+    girth_height_ratio=0.12,
+    gravity_factor=0.75,
+)
+```
+
+Install the adapter from this checkout:
+
+```bash
+uv pip install -e .
+```
+
+`rayextract` must be compiled and available on `PATH`. BRIK compiles it into
+the application image and installs this Python package from the nested
+submodule checkout.
+
+Run the adapter tests with an environment that provides pytest:
+
+```bash
+pytest python/tests
+```
+
+## Upstream project
+
+A set of command line tools for processing ray clouds, together with an
+associated C++ library.
 A set of command line tools for processing ray clouds, together with an associated C++ library.
 
 
