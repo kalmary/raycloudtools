@@ -1,29 +1,31 @@
-# FindGeoTIFF.cmake
+# This module searches for the standalone GeoTIFF library and defines:
+#   GeoTIFF_LIBRARIES    - link libraries
+#   GeoTIFF_INCLUDE_DIRS - include directories (contains geotiff.h)
+#   GeoTIFF_FOUND        - true if found
 
-# Try to find the GeoTIFF library and headers
-find_path(GeoTIFF_INCLUDE_DIR NAMES geotiff.h
-    HINTS
-    ${CMAKE_INSTALL_PREFIX}/include
-    /usr/local/include/geotiff
-    /usr/include
+find_path(GeoTIFF_INCLUDE_DIRS
+  NAMES geotiff.h
+  HINTS ENV GeoTIFF_ROOT
+  PATH_SUFFIXES include include/geotiff
 )
 
-find_library(GeoTIFF_LIBRARY NAMES geotiff
-    HINTS
-    ${CMAKE_INSTALL_PREFIX}/lib
-    /usr/local/lib
-    /usr/lib
-    /usr/lib/x86_64-linux-gnu
+find_library(GeoTIFF_LIBRARY
+  NAMES geotiff
+  HINTS ENV GeoTIFF_ROOT
+  PATH_SUFFIXES lib
 )
 
-# Handle the result
+set(GeoTIFF_LIBRARIES ${GeoTIFF_LIBRARY})
+
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(GeoTIFF REQUIRED_VARS GeoTIFF_INCLUDE_DIR GeoTIFF_LIBRARY)
+find_package_handle_standard_args(GeoTIFF
+  REQUIRED_VARS
+    GeoTIFF_INCLUDE_DIRS
+    GeoTIFF_LIBRARIES
+)
 
-if(GeoTIFF_FOUND)
-    set(GeoTIFF_LIBRARIES ${GeoTIFF_LIBRARY})
-else()
-    set(GeoTIFF_LIBRARIES "")
-endif()
-
-mark_as_advanced(GeoTIFF_INCLUDE_DIR GeoTIFF_LIBRARY)
+mark_as_advanced(
+  GeoTIFF_INCLUDE_DIRS
+  GeoTIFF_LIBRARIES
+  GeoTIFF_LIBRARY
+)

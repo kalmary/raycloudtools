@@ -8,7 +8,10 @@
 #include "raylib/raycloudwriter.h"
 #include "raylib/rayparse.h"
 #define STB_IMAGE_IMPLEMENTATION
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
 #include "raylib/imageread.h"
+#pragma GCC diagnostic pop
 
 #include <nabo/nabo.h>
 #include <cstdio>
@@ -21,7 +24,7 @@ void usage(int exit_code = 1)
 {
   // clang-format off
   std::cout << "Colour the ray cloud, and/or shade it" << std::endl;
-  std::cout << "usage:" << std::endl;
+  std::cout << "usage (--view / -v to view results):" << std::endl;
   std::cout << "raycolour raycloud time          - colour by time (optional on all types)" << std::endl;
   std::cout << "                   height        - colour by height" << std::endl;
   std::cout << "                   shape         - colour by geometry shape (r,g,b: spherical, cylinderical, planar)" << std::endl;
@@ -100,14 +103,15 @@ int rayColour(int argc, char *argv[])
 {
   ray::FileArgument cloud_file, image_file;
   ray::KeyChoice colour_type({ "time", "height", "shape", "normal", "alpha", "branches" });
-  ray::OptionalFlagArgument lit("lit", 'l');
+  ray::OptionalFlagArgument lit("lit", 'l'), view_flag("view", 'v');
   ray::Vector3dArgument col(0.0, 1.0);
   ray::DoubleArgument alpha(0.0, 1.0);
   ray::TextArgument alpha_text("alpha"), image_text("image");
-  const bool standard_format = ray::parseCommandLine(argc, argv, { &cloud_file, &colour_type }, { &lit });
-  const bool flat_colour = ray::parseCommandLine(argc, argv, { &cloud_file, &col }, { &lit });
-  const bool flat_alpha = ray::parseCommandLine(argc, argv, { &cloud_file, &alpha_text, &alpha }, { &lit });
-  const bool image_format = ray::parseCommandLine(argc, argv, { &cloud_file, &image_text, &image_file }, { &lit });
+  const bool standard_format = ray::parseCommandLine(argc, argv, { &cloud_file, &colour_type }, { &lit, &view_flag });
+  const bool flat_colour = ray::parseCommandLine(argc, argv, { &cloud_file, &col }, { &lit, &view_flag });
+  const bool flat_alpha = ray::parseCommandLine(argc, argv, { &cloud_file, &alpha_text, &alpha }, { &lit, &view_flag });
+  const bool image_format =
+    ray::parseCommandLine(argc, argv, { &cloud_file, &image_text, &image_file }, { &lit, &view_flag });
   if (!standard_format && !flat_colour && !flat_alpha && !image_format)
     usage();
 
@@ -185,7 +189,11 @@ int rayColour(int argc, char *argv[])
     }
     writer.end();
     if (!lit.isSet())
+    {
+      if (view_flag.isSet())
+        ray::viewFile(out_file);
       return 0;
+    }
     in_file = out_file;  // when lit we have to load again, from the saved output file
     std::cout << "reopening file for lighting..." << std::endl;
   }
@@ -365,6 +373,8 @@ int rayColour(int argc, char *argv[])
   }
   cloud.save(out_file);
 
+  if (view_flag.isSet())
+    ray::viewFile(out_file);
   return 0;
 }
 
