@@ -1,12 +1,15 @@
 [build-system]
-requires = ["setuptools>=68"]
-build-backend = "setuptools.build_meta"
+requires = ["scikit-build-core>=0.11,<1"]
+build-backend = "scikit_build_core.build"
 
 [project]
 name = "raycloud-tools"
 version = "0.1.0"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
+
+[project.scripts]
+rayextract = "raycloud_tools:main"
 
 [dependency-groups]
 basic = []
@@ -18,8 +21,14 @@ test = [
 [tool.uv]
 default-groups = ["basic"]
 
-[tool.setuptools.packages.find]
-where = ["python"]
+[tool.scikit-build]
+cmake.source-dir = "python"
+wheel.packages = ["python/raycloud_tools"]
+wheel.py-api = "py3"
+install.components = ["python"]
+build.targets = ["rayextract"]
+build.tool-args = ["-j2"]
+sdist.include = ["3rd-party/libnabo/**"]
 
 [tool.pytest.ini_options]
 testpaths = ["python/tests"]

@@ -1,6 +1,11 @@
 import os
 import subprocess
+from importlib.metadata import distribution
 from pathlib import Path
+
+
+def executable_path() -> Path:
+    return Path(distribution("raycloud-tools").locate_file("raycloud_tools/_native/rayextract"))
 
 
 def run_trees(
@@ -22,7 +27,7 @@ def run_trees(
 ) -> Path:
     cloud_path = Path(cloud_path)
     command = [
-        "rayextract",
+        os.fspath(executable_path()),
         "trees",
         os.fspath(cloud_path),
         os.fspath(ground_path),

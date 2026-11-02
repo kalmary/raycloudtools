@@ -15,7 +15,28 @@ Clone it with its pinned build dependency:
 git clone --recurse-submodules git@github.com:kalmary/raycloudtools.git
 ```
 
-## Native build
+## Python installation
+
+The Python package builds and bundles `rayextract` and `raylib` when installed.
+No separate native build or `PATH` configuration is needed. Source installation
+requires a C++ compiler, Eigen 3, and OpenMP. On macOS, install the prerequisites:
+
+```bash
+brew install eigen@3 libomp
+```
+
+On Ubuntu, install `build-essential` and `libeigen3-dev`. Initialize the pinned
+submodules before installing from a checkout, then run:
+
+```bash
+uv sync --group basic
+uv run rayextract --help
+```
+
+The installed `rayextract` command and `run_trees()` use the bundled executable.
+Platform wheels contain native code; build a separate wheel for each platform.
+
+## Standalone native build
 
 Initialize the pinned build dependency first:
 
@@ -55,7 +76,7 @@ Install it from this checkout:
 uv sync --group basic
 ```
 
-Then call the installed `rayextract` executable through Python:
+Then call the bundled `rayextract` executable through Python:
 
 ```python
 from pathlib import Path

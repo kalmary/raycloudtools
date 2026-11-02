@@ -4,6 +4,7 @@ from subprocess import CompletedProcess
 import pytest
 
 from raycloud_tools import run_trees
+from raycloud_tools.trees import executable_path
 
 
 def test_run_trees_builds_supported_command(monkeypatch, tmp_path):
@@ -32,7 +33,7 @@ def test_run_trees_builds_supported_command(monkeypatch, tmp_path):
     )
 
     assert recorded["command"] == [
-        "rayextract",
+        str(executable_path()),
         "trees",
         str(tmp_path / "cloud.ply"),
         str(tmp_path / "ground.ply"),
@@ -74,3 +75,16 @@ def test_run_trees_reports_process_failure(monkeypatch):
             girth_height_ratio=0.12,
             gravity_factor=0.75,
         )
+
+
+def test_command_uses_bundled_executable(monkeypatch):
+    import raycloud_tools
+
+    calls = []
+    monkeypatch.setattr("sys.argv", ["rayextract", "--help"])
+    monkeypatch.setattr("os.execv", lambda path, args: calls.append((path, args)))
+
+    raycloud_tools.main()
+
+    executable = str(executable_path())
+    assert calls == [(executable, [executable, "--help"])]
